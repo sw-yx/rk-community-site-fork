@@ -51,7 +51,7 @@ export default props => {
               fill="#000"
             />
           </svg>
-          <Link to="/">React Knowledgeable</Link>
+          <Link to="/">React Knowledgeable Fork</Link>
         </h1>
         <p>
           React Knowledgeable, nicknamed <code>&lt;RK /&gt;</code>, is a fun and
