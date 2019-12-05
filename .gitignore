@@ -4,6 +4,5 @@
 .cache/
 public
 .env
-functions/*
 # Local Netlify folder
 .netlify

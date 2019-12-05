@@ -1,35 +1,37 @@
-import Airtable from 'airtable'
+const Airtable = require('airtable')
 
 const ERROR_MSGS = {
   UNSUPPORTED_METHOD: 'Unsupported method',
   UNKNOWN_ERROR: 'Server Error',
 }
 
-export const handler = async (event, _, callback) => {
+exports.handler = async (event) => {
   try {
     const atClient = _configureAirtable()
     switch (event.httpMethod) {
       case 'POST':
-        await insertAttendee(atClient, event, callback)
+        return await insertAttendee(atClient, event)
         break
       case 'GET':
-        await retrieveAttendees(atClient, event, callback)
+        return await retrieveAttendees(atClient, event)
         break
       default:
-        callback(Error({ message: ERROR_MSGS.UNSUPPORTED_METHOD }), {
-          status: 405,
+        return {
+          statusCode: 405,
+          message: ERROR_MSGS.UNSUPPORTED_METHOD,
           body: ERROR_MSGS.UNSUPPORTED_METHOD,
-        })
+        }
     }
   } catch (e) {
-    callback(Error(e), {
-      status: 500,
+    console.error(e)
+    return {
+      statusCode: 500,
       body: ERROR_MSGS.UNKNOWN_ERROR,
-    })
+    }
   }
 }
 
-async function retrieveAttendees(Client, event, callback) {
+async function retrieveAttendees(Client, event) {
   let attendees = []
   let selectOpts = {}
   const { eventId } = event.queryStringParameters
@@ -44,18 +46,19 @@ async function retrieveAttendees(Client, event, callback) {
       })
       fetchNextPage()
     })
-  callback(null, {
-    status: 200,
+  return {
+    statusCode: 200,
     body: JSON.stringify(attendees),
-  })
+  }
 }
 
-async function insertAttendee(Client, event, callback) {
+async function insertAttendee(Client, event) {
   if (event.httpMethod !== 'POST') {
-    return callback(Error({ message: ERROR_MSGS.UNSUPPORTED_METHOD }), {
-      status: 405,
+    return {
+      statusCode: 405,
+      message: ERROR_MSGS.UNSUPPORTED_METHOD,
       body: ERROR_MSGS.UNSUPPORTED_METHOD,
-    })
+    }
   }
   const { eventId, name, username } = JSON.parse(event.body)
   await Client('Attendees').create([
@@ -69,13 +72,15 @@ async function insertAttendee(Client, event, callback) {
       },
     },
   ])
-  callback(null, {
-    status: 200,
+  return {
+    statusCode: 200,
     body: JSON.stringify({ name, eventId }),
-  })
+  }
 }
 
 function _configureAirtable() {
-  Airtable.configure({ apiKey: '__AIRTABLE_API_KEY__' })
-  return Airtable.base('__AIRTABLE_BASE_ID__')
+  if (!process.env.AIRTABLE_BASE_ID) throw new Error('must set process.env.AIRTABLE_BASE_ID')
+  if (!process.env.AIRTABLE_API_KEY) throw new Error('must set process.env.AIRTABLE_API_KEY')
+  Airtable.configure({ apiKey: process.env.AIRTABLE_API_KEY })
+  return Airtable.base(process.env.AIRTABLE_BASE_ID)
 }
